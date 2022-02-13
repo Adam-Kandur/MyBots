@@ -32,16 +32,14 @@ class Program
         return Task.CompletedTask;
     }
 
-    private static Task ClientOnMessageReceived(SocketMessage arg)
+    private async Task ClientOnMessageReceived(SocketMessage arg)
     {
         if (arg.Content.StartsWith("!ping"))
         {
-            arg.Channel.SendMessageAsync(
+            await arg.Channel.SendMessageAsync(
                 $"Hi, '{arg.Author.Username}'! Pong."
             );
         }
-
-        return Task.CompletedTask;
     }
 
     private async Task ClientOnVoiceStateUpdate(SocketUser user,
@@ -53,11 +51,17 @@ class Program
 
         if (newState.VoiceChannel != null &&
             newState.VoiceChannel.Id == createVcRoomChannelId)
-        {
-            const string newVoiceChannelName = user.Username;
-            _client.Guilds.CreateVoiceChannelAsync(newVoiceChannelName);
-            await Console.WriteLine("hi");
-        }
+            {
+                if (user is SocketGuildUser guildUser)
+                {
+                    var guild = _client.GetGuild(937118485505523752);
+                    var vc = await guild.CreateVoiceChannelAsync(
+                        guildUser.Nickname ?? guildUser.Username
+                    );
+
+                    await guildUser.ModifyAsync(x => x.Channel = vc);
+                }
+            }
     }
 
     public async Task AnnounceJoinedUser(SocketGuildUser user)
